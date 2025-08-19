@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Maintenance Calories & Macros Calculator</title>
+  <style>
+    :root{
+      --bg:#0f172a;           /* slate-900 */
+      --card:#0b1226;         /* deep card */
+      --muted:#94a3b8;        /* slate-400 */
+      --text:#e2e8f0;         /* slate-200 */
+      --accent:#22c55e;       /* green-500 */
+      --accent-2:#38bdf8;     /* sky-400 */
+      --danger:#ef4444;       /* red-500 */
+      --ring: 0 0 0 3px rgba(56,189,248,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(56,189,248,.15), transparent 60%),
+                  radial-gradient(1000px 700px at 110% 10%, rgba(34,197,94,.12), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      line-height:1.4;
+    }
+    .container{
+      max-width:1100px; margin:40px auto; padding:16px;
+    }
+    .title{
+      text-align:center; margin:0 0 18px; font-weight:800; letter-spacing:.2px;
+      font-size:clamp(22px, 2.5vw, 34px);
+    }
+    .subtitle{ text-align:center; margin:0 0 28px; color:var(--muted)}
+
+    .grid{
+      display:grid; gap:16px; grid-template-columns: 1.2fr .8fr;
+    }
+    @media (max-width: 920px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(148,163,184,.15);
+      border-radius:18px; padding:18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      backdrop-filter: blur(6px);
+    }
+
+    .section-title{ font-weight:700; margin:2px 0 14px; font-size:18px }
+
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:12px }
+    @media (max-width:640px){ .row{ grid-template-columns: 1fr } }
+
+    label{ display:block; font-size:14px; color:var(--muted); margin:0 0 6px }
+    input[type="number"], select{
+      width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(148,163,184,.25);
+      background:#0a0f20; color:var(--text); outline:none; transition: box-shadow .2s, border-color .2s;
+    }
+    input[type="number"]:focus, select:focus{ box-shadow: var(--ring); border-color: var(--accent-2) }
+
+    .help{ font-size:12px; color:var(--muted); margin-top:6px }
+
+    .units-toggle{ display:flex; gap:8px; align-items:center; margin:2px 0 8px }
+    .toggle{
+      position:relative; width:56px; height:30px; background:#0a0f20; border:1px solid rgba(148,163,184,.25);
+      border-radius:999px; cursor:pointer; transition: background .2s, border-color .2s;
+    }
+    .toggle:focus{ outline:none; box-shadow: var(--ring) }
+    .knob{ position:absolute; top:3px; left:3px; width:24px; height:24px; background:var(--accent-2); border-radius:999px; transition:left .2s }
+    .toggle[data-state="metric"] .knob{ left:29px; background:var(--accent) }
+    .unit-label{ font-size:13px; color:var(--muted) }
+
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px }
+    .btn{
+      appearance:none; border:1px solid rgba(148,163,184,.25); background:#0a0f20; color:var(--text);
+      padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:600; transition: transform .06s ease, box-shadow .2s, border-color .2s;
+    }
+    .btn:hover{ border-color: rgba(148,163,184,.45) }
+    .btn:active{ transform: translateY(1px) }
+    .btn.primary{ background: linear-gradient(135deg, var(--accent), #16a34a); border-color: transparent; color:#06240f }
+    .btn.secondary{ background: linear-gradient(135deg, var(--accent-2), #0ea5e9); border-color: transparent; color:#031a23 }
+    .btn.warn{ background: linear-gradient(135deg, var(--danger), #b91c1c); border-color: transparent; color:#2a0606 }
+
+    .results{
+      display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin-top:8px
+    }
+    @media (max-width:640px){ .results{ grid-template-columns: 1fr } }
+
+    .stat{
+      background: #0a0f20; border:1px solid rgba(148,163,184,.2); border-radius:14px; padding:14px;
+    }
+    .stat .label{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em }
+    .stat .value{ font-size:clamp(20px, 3.5vw, 28px); font-weight:800; margin-top:6px }
+
+    .error{ display:none; margin-top:8px; padding:10px; border-radius:12px; background: rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); color:#fecaca }
+
+    .footnote{ font-size:12px; color:var(--muted); margin-top:10px }
+
+    /* Print styles */
+    @media print{
+      body{ background:#fff; color:#000 }
+      .container{ margin:0; max-width:none; padding:0 }
+      .card{ box-shadow:none; border:1px solid #ddd; background:#fff }
+      .actions, .units-toggle, .subtitle{ display:none !important }
+      .title{ color:#000 }
+      .stat{ border-color:#ccc }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">Maintenance Calories & Macros Calculator</h1>
+    <p class="subtitle">Uses your inputs to compute BMR, daily maintenance calories, and a macro split (30% protein, 30% fat, 40% carbs).</p>
+
+    <div class="grid">
+      <!-- Left: Form -->
+      <section class="card" aria-labelledby="inputsTitle">
+        <h2 id="inputsTitle" class="section-title">Enter Your Details</h2>
+
+        <!-- Units toggle -->
+        <div class="units-toggle" aria-live="polite">
+          <span class="unit-label">Units:</span>
+          <button id="unitsToggle" class="toggle" type="button" role="switch" aria-checked="false" aria-label="Toggle units between US and Metric" data-state="us">
+            <span class="knob" aria-hidden="true"></span>
+          </button>
+          <span id="unitsLabel" class="unit-label">US (lbs, inches)</span>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="weight">Weight (<span id="wUnit">lbs</span>)</label>
+            <input id="weight" type="number" inputmode="decimal" placeholder="e.g., 150" min="1" step="0.1" />
+            <div class="help">Enter your body weight.</div>
+          </div>
+          <div>
+            <label for="height">Height (<span id="hUnit">in</span>)</label>
+            <input id="height" type="number" inputmode="decimal" placeholder="e.g., 68" min="1" step="0.1" />
+            <div class="help">Total height (no fractions).</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="age">Age (years)</label>
+            <input id="age" type="number" inputmode="numeric" placeholder="e.g., 28" min="1" max="120" />
+          </div>
+          <div>
+            <label for="activity">Activity Level</label>
+            <select id="activity">
+              <option value="1.2">Sedentary / No Exercise / Desk job</option>
+              <option value="1.375">Lightly Active / 1–3x per week</option>
+              <option value="1.55">Moderately Active / 3–5x per week</option>
+              <option value="1.725">Very Active / 6–7x per week</option>
+              <option value="1.9">Extremely Active / Athlete / Physical Job / 2x per day</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="calcBtn" type="button">Calculate</button>
+          <button class="btn" id="copyBtn" type="button">Copy Results</button>
+          <button class="btn secondary" id="printBtn" type="button">Print / Save PDF</button>
+          <button class="btn warn" id="resetBtn" type="button">Reset</button>
+        </div>
+        <div id="error" class="error" role="alert"></div>
+        <!--<p class="footnote">BMR formula used: <em>(weight × 4.536) + (height × 15.88) − (age × 5) − 161</em>. Activity factor multiplies BMR to estimate maintenance calories.</p>-->
+      </section>
+
+      <!-- Right: Results -->
+      <section class="card" aria-labelledby="resultsTitle">
+        <h2 id="resultsTitle" class="section-title">Your Results</h2>
+        <div class="results" id="results" aria-live="polite">
+          <div class="stat"><div class="label">BMR</div><div id="bmrOut" class="value">—</div></div>
+          <div class="stat"><div class="label">Maintenance Calories</div><div id="maintOut" class="value">—</div></div>
+          <div class="stat"><div class="label">Protein / day</div><div id="protOut" class="value">—</div></div>
+          <div class="stat"><div class="label">Fat / day</div><div id="fatOut" class="value">—</div></div>
+          <div class="stat"><div class="label">Carbs / day</div><div id="carbOut" class="value">—</div></div>
+          <div class="stat"><div class="label">Macro Split</div><div class="value">30% P • 30% F • 40% C</div></div>
+        </div>
+        <p class="footnote">Tip: Accuracy improves with consistent measurement units. Use the toggle to switch between US and Metric; we convert behind the scenes.</p>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const el = (id)=>document.getElementById(id);
+    const weight = el('weight');
+    const height = el('height');
+    const age = el('age');
+    const activity = el('activity');
+    const error = el('error');
+
+    const bmrOut = el('bmrOut');
+    const maintOut = el('maintOut');
+    const protOut = el('protOut');
+    const fatOut  = el('fatOut');
+    const carbOut = el('carbOut');
+
+    const unitsToggle = el('unitsToggle');
+    const unitsLabel = el('unitsLabel');
+    const wUnit = el('wUnit');
+    const hUnit = el('hUnit');
+
+    function setUnits(state){
+      if(state==='metric'){
+        unitsToggle.dataset.state = 'metric';
+        unitsToggle.setAttribute('aria-checked','true');
+        unitsLabel.textContent = 'Metric (kg, cm)';
+        wUnit.textContent = 'kg';
+        hUnit.textContent = 'cm';
+        // Convert existing values to metric if present
+        if(weight.value){ weight.value = round(weight.value/2.2046226218, 2); }
+        if(height.value){ height.value = round(height.value/0.3937007874, 1); }
+      } else {
+        unitsToggle.dataset.state = 'us';
+        unitsToggle.setAttribute('aria-checked','false');
+        unitsLabel.textContent = 'US (lbs, inches)';
+        wUnit.textContent = 'lbs';
+        hUnit.textContent = 'in';
+        // Convert existing values to US if present
+        if(weight.value){ weight.value = round(weight.value*2.2046226218, 1); }
+        if(height.value){ height.value = round(height.value*0.3937007874, 1); }
+      }
+    }
+
+    unitsToggle.addEventListener('click', ()=>{
+      const next = unitsToggle.dataset.state === 'us' ? 'metric' : 'us';
+      setUnits(next);
+      clearResults();
+    });
+
+    function round(n, d=0){ return Number.parseFloat(n).toFixed(d) }
+
+    function showError(msg){ error.style.display='block'; error.textContent = msg }
+    function clearError(){ error.style.display='none'; error.textContent = '' }
+
+    function clearResults(){
+      bmrOut.textContent = '—';
+      maintOut.textContent = '—';
+      protOut.textContent = '—';
+      fatOut.textContent  = '—';
+      carbOut.textContent = '—';
+    }
+
+    function getValues(){
+      const w = Number(weight.value);
+      const h = Number(height.value);
+      const a = Number(age.value);
+      const act = Number(activity.value);
+      const unitState = unitsToggle.dataset.state || 'us';
+
+      if(!w || !h || !a){ throw new Error('Please enter valid weight, height, and age.'); }
+      if(w <= 0 || h <= 0 || a <= 0){ throw new Error('Inputs must be greater than zero.'); }
+
+      // Convert to lbs & inches if user is in metric, because formula expects lbs & inches
+      const weightLbs = unitState==='metric' ? (w * 2.2046226218) : w;
+      const heightIn  = unitState==='metric' ? (h * 0.3937007874) : h;
+
+      return { weightLbs, heightIn, age:a, activity:act };
+    }
+
+    function calculate(){
+      clearError();
+      try{
+        const { weightLbs, heightIn, age, activity } = getValues();
+        // Provided formula:
+        // BMR = (weight*4.536) + (height*15.88) - (age*5) - 161
+        const bmr = (weightLbs * 4.536) + (heightIn * 15.88) - (age * 5) - 161;
+        const maint = bmr * activity;
+
+        // Macros
+        const proteinG = (maint / 4) * 0.30; // 30% of calories / 4 kcal per g
+        const fatG     = (maint / 9) * 0.30; // 30% / 9 kcal per g
+        const carbsG   = (maint / 4) * 0.40; // 40% / 4 kcal per g
+
+        // Update UI (rounded sensibly)
+        bmrOut.textContent   = Math.round(bmr).toLocaleString() + ' kcal';
+        maintOut.textContent = Math.round(maint).toLocaleString() + ' kcal';
+        protOut.textContent  = Math.round(proteinG).toLocaleString() + ' g';
+        fatOut.textContent   = Math.round(fatG).toLocaleString() + ' g';
+        carbOut.textContent  = Math.round(carbsG).toLocaleString() + ' g';
+      }catch(e){ showError(e.message); clearResults(); }
+    }
+
+    function resetAll(){
+      weight.value = '';
+      height.value = '';
+      age.value = '';
+      activity.value = '1.2';
+      clearError();
+      clearResults();
+    }
+
+    function copyResults(){
+      const text = `BMR: ${bmrOut.textContent}\nMaintenance: ${maintOut.textContent}\nProtein/day: ${protOut.textContent}\nFat/day: ${fatOut.textContent}\nCarbs/day: ${carbOut.textContent}`;
+      navigator.clipboard.writeText(text).then(()=>{
+        showToast('Results copied to clipboard');
+      }).catch(()=>{
+        showToast('Could not copy. Select and copy manually.');
+      })
+    }
+
+    function showToast(message){
+      let toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.position='fixed';
+      toast.style.bottom='18px';
+      toast.style.left='50%';
+      toast.style.transform='translateX(-50%)';
+      toast.style.background='rgba(56,189,248,.95)';
+      toast.style.color='#001018';
+      toast.style.padding='10px 14px';
+      toast.style.borderRadius='12px';
+      toast.style.fontWeight='700';
+      toast.style.boxShadow='0 6px 24px rgba(0,0,0,.3)';
+      toast.style.zIndex='9999';
+      document.body.appendChild(toast);
+      setTimeout(()=> toast.remove(), 1800);
+    }
+
+    // Bindings
+    el('calcBtn').addEventListener('click', calculate);
+    el('resetBtn').addEventListener('click', resetAll);
+    el('copyBtn').addEventListener('click', copyResults);
+    el('printBtn').addEventListener('click', ()=>window.print());
+
+    // Initialize
+    setUnits('us');
+  </script>
+</body>
+</html>
